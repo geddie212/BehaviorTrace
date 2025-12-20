@@ -6,11 +6,16 @@
     "build": "vite build"
   },
   "dependencies": {
+    "bootstrap": "^5.3.8",
     "react": "^18.2.0",
+    "react-bootstrap": "^2.10.10",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.2",
+    "autoprefixer": "^10.4.23",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
     "vite": "^7.3.0"
   }
 }
