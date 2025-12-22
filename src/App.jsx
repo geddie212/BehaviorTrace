@@ -1,21 +1,40 @@
-import { useState } from "react";
+// src/App.jsx
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Auth from "./pages/Auth";
+import Trace from "./pages/Trace";
+import AdminAuth from "./pages/AdminAuth";
+import Dashboard from "./pages/Dashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
-function App() {
-  const [message, setMessage] = useState("");
-
-  async function callBackend() {
-    const res = await fetch("/.netlify/functions/hello");
-    const data = await res.json();
-    setMessage(data.message);
-  }
-
+export default function App() {
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Netlify React + Node Test</h2>
-      <button onClick={callBackend}>Call Backend</button>
-      <p>{message}</p>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        {/* Normal users */}
+        <Route path="/" element={<Auth />} />
+        <Route
+          path="/trace"
+          element={
+            <ProtectedRoute>
+              <Trace />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin */}
+        <Route path="/admin" element={<AdminAuth />} />
+        <Route
+          path="/dashboard"
+          element={
+            <AdminProtectedRoute>
+              <Dashboard />
+            </AdminProtectedRoute>
+          }
+        />
+
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;
