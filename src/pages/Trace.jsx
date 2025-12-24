@@ -139,6 +139,12 @@ export default function Trace() {
         <button className="btn btn-outline-danger" onClick={logout}>
           Logout
         </button>
+		<button
+			onClick={async () => {
+			const result = await Notification.requestPermission();
+			console.log(result);}}>
+			Enable Notifications
+		</button>
       </div>
 
       {successMessage && (
