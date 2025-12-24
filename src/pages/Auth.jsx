@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../supabase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -22,6 +22,7 @@ export default function Auth() {
       if (error) return setError(error.message);
 
       alert("Signed up, please login");
+      setMode("login");
       return;
     }
 
@@ -37,7 +38,9 @@ export default function Auth() {
 
   return (
     <div className="container mt-5" style={{ maxWidth: 400 }}>
-      <h1 className="mb-3">{mode === "login" ? "Log in" : "Create account"}</h1>
+      <h1 className="mb-3">
+        {mode === "login" ? "Log in" : "Create account"}
+      </h1>
 
       <form onSubmit={handleSubmit}>
         <input
@@ -67,19 +70,34 @@ export default function Auth() {
         {mode === "login" ? (
           <>
             No account?{" "}
-            <button className="btn btn-link" onClick={() => setMode("signup")}>
+            <button
+              type="button"
+              className="btn btn-link p-0"
+              onClick={() => setMode("signup")}
+            >
               Sign up
             </button>
           </>
         ) : (
           <>
             Already have an account?{" "}
-            <button className="btn btn-link" onClick={() => setMode("login")}>
+            <button
+              type="button"
+              className="btn btn-link p-0"
+              onClick={() => setMode("login")}
+            >
               Log in
             </button>
           </>
         )}
       </p>
+
+      {/* Admin login link */}
+      <div className="text-center mt-2">
+        <Link to="/admin" className="text-decoration-none">
+          Admin login
+        </Link>
+      </div>
     </div>
   );
 }
