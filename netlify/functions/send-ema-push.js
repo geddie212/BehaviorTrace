@@ -2,13 +2,13 @@ import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
-  process.env.SUPABASE_URL,
+  process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 webpush.setVapidDetails(
   "mailto:paulged@icloud.com",
-  process.env.VAPID_PUBLIC_KEY,
+  process.env.VITE_VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
 
