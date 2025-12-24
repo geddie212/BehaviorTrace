@@ -1,207 +1,118 @@
-// src/pages/Trace.jsx
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
 import { useNavigate } from "react-router-dom";
 
-// Helper to convert VAPID key
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
+  const rawData = atob(base64);
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
 export default function Trace() {
   const navigate = useNavigate();
-  const [userId, setUserId] = useState(null);
+  const [user, setUser] = useState(null);
   const [forms, setForms] = useState([]);
-  const [successMessage, setSuccessMessage] = useState("");
   const [emaPrompt, setEmaPrompt] = useState(null);
 
   useEffect(() => {
-    const init = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        navigate("/");
-        return;
-      }
-      setUserId(session.user.id);
-
-      /* ---------------- SERVICE WORKER ---------------- */
-      if ("serviceWorker" in navigator) {
-        try {
-          const registration = await navigator.serviceWorker.register("/service-worker.js");
-          console.log("Service Worker registered:", registration);
-
-          // Request notification permission
-          const permission = await Notification.requestPermission();
-          if (permission !== "granted") {
-            console.warn("Push notifications permission denied");
-            return;
-          }
-
-          // Subscribe for push
-          const existingSub = await registration.pushManager.getSubscription();
-          const sub =
-            existingSub ??
-            (await registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlBase64ToUint8Array(
-                import.meta.env.VITE_VAPID_PUBLIC_KEY
-              ),
-            }));
-
-          // Store subscription in Supabase
-          await supabase.from("push_subscriptions").upsert({
-            user_id: session.user.id,
-            subscription: sub,
-          });
-          console.log("Push subscription saved:", sub);
-        } catch (err) {
-          console.error("Push registration failed", err);
-        }
-      }
-
-      /* ---------------- LOAD FORMS + LABELS ---------------- */
-      const { data: formsData } = await supabase
-        .from("forms")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      const formIds = formsData.map((f) => f.id);
-      const { data: labelsData } = await supabase
-        .from("labels")
-        .select("*")
-        .in("form_id", formIds);
-
-      setForms(
-        formsData.map((f) => ({
-          ...f,
-          labels: labelsData.filter((l) => l.form_id === f.id),
-        }))
-      );
-
-      /* ---------------- CHECK FOR PENDING EMA ---------------- */
-      const { data: pending } = await supabase
-        .from("user_states")
-        .select("*, labels(*)")
-        .eq("user_id", session.user.id)
-        .eq("active", true)
-        .lte("next_prompt_at", new Date().toISOString())
-        .maybeSingle();
-
-      if (pending) {
-        setEmaPrompt({ state: pending, label: pending.labels });
-      }
-    };
-
     init();
-  }, [navigate]);
+  }, []);
 
-  async function logLabel(formId, label) {
-    if (label.label_type !== "ema") {
-      await supabase.from("user_logs").insert({
-        user_id: userId,
-        form_id,
-        label_id: label.id,
-      });
-      setSuccessMessage(`Logged "${label.label_name}"`);
-      setTimeout(() => setSuccessMessage(""), 2000);
+  async function init() {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      navigate("/");
       return;
     }
+    setUser(data.session.user);
 
-    const { data: existing } = await supabase
+    await loadForms();
+    await checkEma();
+  }
+
+  async function enablePush() {
+    const reg = await navigator.serviceWorker.register("/sw.js");
+
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return;
+
+    const sub =
+      (await reg.pushManager.getSubscription()) ||
+      (await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(
+          import.meta.env.VITE_VAPID_PUBLIC_KEY
+        )
+      }));
+
+    await supabase.from("push_subscriptions").upsert({
+      user_id: user.id,
+      subscription: sub
+    });
+  }
+
+  async function loadForms() {
+    const { data: forms } = await supabase.from("forms").select("*, labels(*)");
+    setForms(forms);
+  }
+
+  async function checkEma() {
+    const { data } = await supabase
       .from("user_states")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("label_id", label.id)
+      .select("*, labels(*)")
+      .eq("user_id", user.id)
       .eq("active", true)
+      .lte("next_prompt_at", new Date().toISOString())
       .maybeSingle();
 
-    if (!existing) {
-      const nextPrompt = new Date(Date.now() + label.ema_interval_seconds * 1000);
-      await supabase.from("user_states").insert({
-        user_id: userId,
-        form_id,
-        label_id: label.id,
-        next_prompt_at: nextPrompt,
-      });
-      setSuccessMessage(`Started "${label.label_name}"`);
-      setTimeout(() => setSuccessMessage(""), 2000);
-    }
+    if (data) setEmaPrompt(data);
   }
 
-  async function handleEmaResponse(answer) {
-    const { state, label } = emaPrompt;
-
+  async function respond(answer) {
     if (answer === "yes") {
-      await supabase
-        .from("user_states")
-        .update({
-          last_confirmed_at: new Date(),
-          next_prompt_at: new Date(Date.now() + label.ema_interval_seconds * 1000),
-        })
-        .eq("id", state.id);
+      await supabase.from("user_states").update({
+        next_prompt_at: new Date(
+          Date.now() + emaPrompt.labels.ema_interval_seconds * 1000
+        )
+      }).eq("id", emaPrompt.id);
     } else {
-      await supabase.from("user_states").update({ active: false, ended_at: new Date() }).eq(
-        "id",
-        state.id
-      );
+      await supabase.from("user_states").update({
+        active: false,
+        ended_at: new Date()
+      }).eq("id", emaPrompt.id);
     }
-
     setEmaPrompt(null);
-  }
-
-  async function logout() {
-    await supabase.auth.signOut();
-    navigate("/");
-  }
-
-  function buttonStyle(label) {
-    if (label.label_type === "decay") return "btn-outline-warning";
-    if (label.label_type === "ema") return "btn-outline-info";
-    return "btn-outline-primary";
   }
 
   return (
     <div className="container mt-5">
-      <div className="d-flex justify-content-between mb-4">
-        <h1>Trace</h1>
-        <button className="btn btn-outline-danger" onClick={logout}>
-          Logout
-        </button>
-      </div>
-
-      {successMessage && <div className="alert alert-success">{successMessage}</div>}
+      <button className="btn btn-primary mb-3" onClick={enablePush}>
+        Enable Notifications
+      </button>
 
       {forms.map((f) => (
-        <div key={f.id} className="mb-4">
+        <div key={f.id}>
           <h3>{f.title}</h3>
-          <p>{f.description}</p>
-          <div className="d-flex flex-wrap gap-2">
-            {f.labels.map((l) => (
-              <button key={l.id} className={`btn ${buttonStyle(l)}`} onClick={() => logLabel(f.id, l)}>
-                {l.label_name}
-              </button>
-            ))}
-          </div>
+          {f.labels.map((l) => (
+            <button key={l.id} className="btn btn-outline-info me-2">
+              {l.label_name}
+            </button>
+          ))}
         </div>
       ))}
 
       {emaPrompt && (
-        <div className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-flex align-items-center justify-content-center">
-          <div className="bg-white p-4 rounded">
-            <h5>
-              Do you still feel <strong>{emaPrompt.label.label_name}</strong>?
-            </h5>
-            <div className="mt-3 d-flex gap-2">
-              <button className="btn btn-success" onClick={() => handleEmaResponse("yes")}>
+        <div className="modal show d-block bg-dark bg-opacity-50">
+          <div className="modal-dialog">
+            <div className="modal-content p-3">
+              <h5>
+                Still feeling {emaPrompt.labels.label_name}?
+              </h5>
+              <button className="btn btn-success" onClick={() => respond("yes")}>
                 Yes
               </button>
-              <button className="btn btn-danger" onClick={() => handleEmaResponse("no")}>
+              <button className="btn btn-danger" onClick={() => respond("no")}>
                 No
               </button>
             </div>
