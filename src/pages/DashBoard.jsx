@@ -21,6 +21,12 @@ export default function Dashboard() {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [confirmText, setConfirmText] = useState("");
+  
+  const [usersWithoutDevices, setUsersWithoutDevices] = useState([]);
+  const [deviceId, setDeviceId] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState(null);
+
+
 
   useEffect(() => {
     const init = async () => {
@@ -30,7 +36,8 @@ export default function Dashboard() {
         return;
       }
       setUserId(session.user.id);
-      fetchForms();
+      await fetchForms();
+	  await fetchUsersWithoutDevices();
     };
     init();
   }, []);
@@ -43,6 +50,21 @@ export default function Dashboard() {
 
     setForms(data || []);
   }
+  
+	async function fetchUsersWithoutDevices() {
+	  const { data, error } = await supabase
+		.from("users_without_devices")
+		.select("id, email") // fetch email directly from the table
+
+	  if (error) {
+		console.error("Error fetching users:", error);
+		return;
+	  }
+
+	  setUsersWithoutDevices(data || []);
+	}
+
+
 
   function addLabel() {
     if (!newLabelName.trim()) return;
@@ -121,6 +143,37 @@ export default function Dashboard() {
     setConfirmText("");
     fetchForms();
   }
+  
+  async function assignDevice() {
+  if (!selectedUserId || !deviceId.trim()) {
+    alert("Select a user and enter a device ID");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("emotibit_devices")
+    .insert({
+      user_id: selectedUserId,
+      device_id: deviceId.trim()
+    });
+
+  if (error) {
+    alert("Error assigning device: " + error.message);
+    return;
+  }
+
+  // Optionally remove the user from the users_without_devices table
+  await supabase
+    .from("users_without_devices")
+    .delete()
+    .eq("id", selectedUserId);
+
+  // Refresh the users list
+  setDeviceId("");
+  setSelectedUserId(null);
+  fetchUsersWithoutDevices();
+}
+
 
   async function logout() {
     await supabase.auth.signOut();
@@ -133,6 +186,35 @@ export default function Dashboard() {
         <h1>Admin Dashboard</h1>
         <button className="btn btn-outline-danger" onClick={logout}>Logout</button>
       </div>
+<hr />
+
+<h3>Assign Devices</h3>
+
+<select
+  className="form-control mb-2"
+  value={selectedUserId || ""}
+  onChange={e => setSelectedUserId(e.target.value)}
+>
+  <option value="">Select User</option>
+{usersWithoutDevices.map(u => (
+  <option key={u.id} value={u.id}>
+    {u.email || u.id}
+  </option>
+))}
+
+</select>
+
+
+<input
+  className="form-control mb-2"
+  placeholder="Device ID"
+  value={deviceId}
+  onChange={e => setDeviceId(e.target.value)}
+/>
+
+<button className="btn btn-primary" onClick={assignDevice}>
+  Assign Device
+</button>
 
       <h3>Create Form</h3>
 

@@ -1,0 +1,25 @@
+TypeTag,Description
+EA,EDA- Electrodermal Activity
+EL,EDL- Electrodermal Level
+ER,EDR- Electrodermal Response (EmotiBit V4+ combines ER into EA signal)
+PI,PPG Infrared
+PR,PPG Red
+PG,PPG Green
+T0,Temperature (only on EmotiBit Alpha/Beta V1, V2, V3)
+T1,Temperature
+TH,Temperature via Medical-grade Thermopile (only on EmotiBit MD)
+AX,Accelerometer X
+AY,Accelerometer Y
+AZ,Accelerometer Z
+GX,Gyroscope X
+GY,Gyroscope Y
+GZ,Gyroscope Z
+MX,Magnetometer X
+MY,Magnetometer Y
+MZ,Magnetometer Z
+SA,Skin Conductance Response (SCR) Amplitude
+SR,Skin Conductance Response (SCR) Rise Time
+SF,Skin Conductance Response (SCR) Frequency
+HR,Heart Rate
+BI,Heart Inter-beat Interval
+H0,Humidity (only on EmotiBit Alpha/Beta V1, V2, V3)

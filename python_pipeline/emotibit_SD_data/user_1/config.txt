@@ -1,0 +1,8 @@
+{
+  "WifiCredentials": [
+    {
+      "ssid": "Paul",
+      "password": "12345678"
+    }
+  ]
+}

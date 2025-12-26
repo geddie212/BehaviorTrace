@@ -1,7 +1,6 @@
-// src/pages/AdminAuth.jsx
 import { useState } from "react";
 import { supabase } from "../supabase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function AdminAuth() {
   const [email, setEmail] = useState("");
@@ -13,15 +12,14 @@ export default function AdminAuth() {
     e.preventDefault();
     setError("");
 
-    // Sign in with Supabase Auth
-    const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { data, error: authError } =
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
     if (authError) return setError(authError.message);
 
-    // Check role in profiles table
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
@@ -29,8 +27,9 @@ export default function AdminAuth() {
       .maybeSingle();
 
     if (profileError) return setError(profileError.message);
+
     if (!profile || profile.role !== "admin") {
-      await supabase.auth.signOut(); // log out if not admin
+      await supabase.auth.signOut();
       return setError("You do not have administrator access.");
     }
 
@@ -46,20 +45,31 @@ export default function AdminAuth() {
           className="form-control mb-3"
           type="email"
           placeholder="Email"
+          value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
+
         <input
           className="form-control mb-3"
           type="password"
           placeholder="Password"
+          value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
+
         <button className="btn btn-primary w-100">Log in</button>
       </form>
 
       {error && <p className="text-danger mt-3">{error}</p>}
+
+      {/* User login link */}
+      <div className="text-center mt-3">
+        <Link to="/" className="text-decoration-none">
+          User login
+        </Link>
+      </div>
     </div>
   );
 }

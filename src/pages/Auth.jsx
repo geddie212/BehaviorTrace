@@ -13,18 +13,36 @@ export default function Auth() {
     e.preventDefault();
     setError("");
 
-    if (mode === "signup") {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+	if (mode === "signup") {
+	  const { data: signUpData, error } = await supabase.auth.signUp({
+		email,
+		password,
+	  });
 
-      if (error) return setError(error.message);
+	  if (error) return setError(error.message);
 
-      alert("Signed up, please login");
-      setMode("login");
-      return;
-    }
+	  if (signUpData.user) {
+		const userId = signUpData.user.id;
+
+		// Insert into users_without_devices
+		await supabase.from("users_without_devices").insert({
+		  id: userId,
+		  email: email,
+		});
+
+		// Insert into profiles
+		await supabase.from("profiles").insert({
+		  id: userId,
+		  role: "user",
+		  email: email,
+		  created_at: new Date().toISOString(),
+		});
+	  }
+
+	  alert("Signed up, please log in");
+	  setMode("login");
+	  return;
+	}
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -47,6 +65,7 @@ export default function Auth() {
           className="form-control mb-3"
           type="email"
           placeholder="Email"
+          value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
@@ -55,6 +74,7 @@ export default function Auth() {
           className="form-control mb-3"
           type="password"
           placeholder="Password"
+          value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
         />
