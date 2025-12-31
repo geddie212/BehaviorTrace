@@ -25,6 +25,8 @@ export default function Dashboard() {
   const [usersWithoutDevices, setUsersWithoutDevices] = useState([]);
   const [deviceId, setDeviceId] = useState("");
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [emaPrompt, setEmaPrompt] = useState("");
+
 
 
 
@@ -66,34 +68,43 @@ export default function Dashboard() {
 
 
 
-  function addLabel() {
-    if (!newLabelName.trim()) return;
+function addLabel() {
+  if (!newLabelName.trim()) return;
 
-    if (labelType === "decay" && !decaySeconds) {
-      alert("Decay labels require decay time");
-      return;
-    }
+  if (labelType === "decay" && !decaySeconds) {
+    alert("Decay labels require decay time");
+    return;
+  }
 
-    if (labelType === "ema" && !emaInterval) {
+  if (labelType === "ema") {
+    if (!emaInterval) {
       alert("EMA labels require prompt interval");
       return;
     }
-
-    setLabels([
-      ...labels,
-      {
-        label_name: newLabelName.trim(),
-        label_type: labelType,
-        decay_seconds: labelType === "decay" ? Number(decaySeconds) : null,
-        ema_interval_seconds: labelType === "ema" ? Number(emaInterval) : null
-      }
-    ]);
-
-    setNewLabelName("");
-    setLabelType("event");
-    setDecaySeconds("");
-    setEmaInterval("");
+    if (!emaPrompt.trim()) {
+      alert("EMA labels require a prompt (what the user will be asked).");
+      return;
+    }
   }
+
+  setLabels([
+    ...labels,
+    {
+      label_name: newLabelName.trim(),
+      label_type: labelType,
+      decay_seconds: labelType === "decay" ? Number(decaySeconds) : null,
+      ema_interval_seconds: labelType === "ema" ? Number(emaInterval) : null,
+      ema_prompt: labelType === "ema" ? emaPrompt.trim() : null,
+    },
+  ]);
+
+  setNewLabelName("");
+  setLabelType("event");
+  setDecaySeconds("");
+  setEmaInterval("");
+  setEmaPrompt("");
+}
+
 
   async function createForm() {
     if (!title || labels.length === 0) {
@@ -112,15 +123,16 @@ export default function Dashboard() {
       return;
     }
 
-    await supabase.from("labels").insert(
-      labels.map(l => ({
-        form_id: form.id,
-        label_name: l.label_name,
-        label_type: l.label_type,
-        decay_seconds: l.decay_seconds,
-        ema_interval_seconds: l.ema_interval_seconds
-      }))
-    );
+	await supabase.from("labels").insert(
+	  labels.map(l => ({
+		form_id: form.id,
+		label_name: l.label_name,
+		label_type: l.label_type,
+		decay_seconds: l.decay_seconds,
+		ema_interval_seconds: l.ema_interval_seconds,
+		ema_prompt: l.ema_prompt,
+	  }))
+	);
 
     setTitle("");
     setDescription("");
@@ -261,15 +273,24 @@ export default function Dashboard() {
         />
       )}
 
-      {labelType === "ema" && (
-        <input
-          type="number"
-          className="form-control mb-2"
-          placeholder="Prompt interval (seconds)"
-          value={emaInterval}
-          onChange={e => setEmaInterval(e.target.value)}
-        />
-      )}
+{labelType === "ema" && (
+  <>
+    <input
+      type="number"
+      className="form-control mb-2"
+      placeholder="Prompt interval (seconds)"
+      value={emaInterval}
+      onChange={e => setEmaInterval(e.target.value)}
+    />
+    <input
+      className="form-control mb-2"
+      placeholder='State prompt (e.g. "Are you still running?")'
+      value={emaPrompt}
+      onChange={e => setEmaPrompt(e.target.value)}
+    />
+  </>
+)}
+
 
       <button className="btn btn-secondary mb-3" onClick={addLabel}>
         Add Label
@@ -277,9 +298,10 @@ export default function Dashboard() {
 
       <ul>
         {labels.map((l, i) => (
-          <li key={i}>
-            {l.label_name} — {l.label_type}
-          </li>
+			<li key={i}>
+			  {l.label_name} — {l.label_type}
+			  {l.label_type === "ema" ? ` (every ${l.ema_interval_seconds}s: "${l.ema_prompt}")` : ""}
+			</li>
         ))}
       </ul>
 
