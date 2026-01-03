@@ -75,8 +75,7 @@ Full setup and study documentation is available here:
 - Form creation
 - Participant EMA labeling via PWA
 
-🎥 Video:  
-assets/videos/first_steps.mp4
+![Steps 1 and 2](assets/images/steps_one_two.gif)
 
 ---
 
@@ -85,8 +84,7 @@ assets/videos/first_steps.mp4
 - Upload biosignals to SQL
 - Train models and run live predictions
 
-🎥 Video:  
-assets/videos/second_steps.mp4
+![Steps 3 and 4](assets/images/steps_three_four.gif)
 
 ---
 
