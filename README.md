@@ -18,6 +18,52 @@ The system is built using **EmotiBit**, an open-source wearable that monitors an
 
 ---
 
+## Getting Started
+
+Full setup and study documentation is available here:
+
+➡️ https://github.com/geddie212/BehaviorTrace_docs
+
+---
+
+## Two-Stage Workflow
+
+### Stage 1 — Study Setup & EMA Labeling
+- Initial platform setup
+- Form creation
+- Participant EMA labeling via PWA
+
+![Steps 1 and 2](assets/images/steps_one_two.png)
+
+---
+
+### Stage 2 — Data Processing, Training & Prediction
+- Process EmotiBit SD card data
+- Upload biosignals to SQL
+- Train models and run live predictions
+
+![Steps 3 and 4](assets/images/steps_three_four.png)
+
+---
+
+## Machine Learning Strategy
+
+- Uses a **window / stride–based approach**
+- Required due to **mixed EmotiBit sampling rates**
+- Supports robust multi-modal time-series alignment
+
+---
+
+## Design Philosophy
+
+BehaviorTrace is designed to:
+- Be easy to deploy
+- Be researcher-friendly
+- Support end-to-end biosignal studies
+
+---
+
+
 ## Example Study Types
 
 ### Stress & Emotional Regulation
@@ -57,51 +103,6 @@ The system is built using **EmotiBit**, an open-source wearable that monitors an
 
 ### Model Training & Ground Truth Validation
 **Purpose:** Create high-quality labeled datasets for ML
-
----
-
-## Getting Started
-
-Full setup and study documentation is available here:
-
-➡️ https://github.com/geddie212/BehaviorTrace_docs
-
----
-
-## Two-Stage Workflow
-
-### Stage 1 — Study Setup & EMA Labeling
-- Initial platform setup
-- Form creation
-- Participant EMA labeling via PWA
-
-![Steps 1 and 2](assets/images/steps_one_two.gif)
-
----
-
-### Stage 2 — Data Processing, Training & Prediction
-- Process EmotiBit SD card data
-- Upload biosignals to SQL
-- Train models and run live predictions
-
-![Steps 3 and 4](assets/images/steps_three_four.gif)
-
----
-
-## Machine Learning Strategy
-
-- Uses a **window / stride–based approach**
-- Required due to **mixed EmotiBit sampling rates**
-- Supports robust multi-modal time-series alignment
-
----
-
-## Design Philosophy
-
-BehaviorTrace is designed to:
-- Be easy to deploy
-- Be researcher-friendly
-- Support end-to-end biosignal studies
 
 ---
 
