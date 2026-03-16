@@ -599,6 +599,25 @@ export default function Trace() {
     return customText || `Stop - ${label.label_name}`;
   }
 
+  function findLabelById(labelId) {
+    return forms.flatMap((form) => form.labels).find((label) => String(label.id) === String(labelId));
+  }
+
+  function findFormIdForLabel(labelId) {
+    return forms.find((form) =>
+      form.labels.some((label) => String(label.id) === String(labelId))
+    )?.id;
+  }
+
+  function stopActiveStateFromPanel(labelId) {
+    const label = findLabelById(labelId);
+    const formId = findFormIdForLabel(labelId);
+
+    if (!label || !formId) return;
+
+    logLabel(formId, label);
+  }
+
   function buttonProps(label) {
     const activeState = activeStates[label.id];
 
@@ -708,9 +727,7 @@ export default function Trace() {
           ) : (
             <div className="trace-chip-grid mt-3">
               {activeStateEntries.map(([labelId, state]) => {
-                const activeLabel = forms
-                  .flatMap((form) => form.labels)
-                  .find((label) => String(label.id) === String(labelId));
+                const activeLabel = findLabelById(labelId);
 
                 return (
                   <div key={labelId} className="trace-active-chip">
@@ -721,6 +738,18 @@ export default function Trace() {
                         {state.pendingSync ? " - waiting to sync" : ""}
                       </span>
                     </div>
+                    {activeLabel && (
+                      <button
+                        className="trace-active-stop"
+                        style={
+                          ACTIVE_COLOR_STYLES[activeLabel.ema_active_color] ||
+                          ACTIVE_COLOR_STYLES.danger
+                        }
+                        onClick={() => stopActiveStateFromPanel(labelId)}
+                      >
+                        {activeButtonText(activeLabel)}
+                      </button>
+                    )}
                   </div>
                 );
               })}
